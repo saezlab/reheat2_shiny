@@ -1,37 +1,31 @@
 library(shiny)
 library(shinyWidgets)
 library(shinyhelper)
-library(shinyjs)
-library(plotly)
-library(DT)
-# remotes::install_github("christianholland/AachenColorPalette")
-library(AachenColorPalette) 
+library(shinythemes)
+library(shinycssloaders)
 library(forcats)
-library(scales)
 library(dplyr)
 library(tibble)
 library(purrr)
-library(ggplot2)
-library(tidyr)
-library(fgsea)
 library(readr)
+library(tidyr)
 library(stringr)
+library(ggplot2)
+library(plotly)
+library(ggrepel)
 library(cowplot)
-library(shinycssloaders)
+
 
 theme_set(theme_cowplot())
 
 # options(repos = BiocManager::repositories())
 
-# load static data
-contrasts = readRDS("data/study_contrasts.rds")
-ranks = readRDS("data/study_ranks.rds")
-overview = readRDS("data/study_overview.rds")
-progeny = readRDS("data/PROGENy_results.rds")
-dorothea = readRDS("data/dorothea_results.rds")
-gsea = readRDS("data/GSEA_results.rds")
-mi_gsea = readRDS("data/GSEA_mir_results.rds")
-directed_signature = readRDS("data/signature.rds")
-undirected_signature = readRDS("data/fisher_signature.rds")
+p.linefit <- readRDS("data/plot_metaranking.rds")
+df.reheat2<- readRDS("data/reheat2_stats_bulk2.rds")
+df.reheat1<- readRDS("data/reheat1_tidy.rds")
 
-example_geneset = read_csv("data/multiple_geneset.csv")
+#p.linefit <- ggplot2::ggplotGrob(ggplot2::ggsave("data/p_linefit_intermediate.png"))
+
+
+
+
