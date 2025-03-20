@@ -131,6 +131,40 @@ ui = function(request) {
         )
       ),
       
+      tabPanel(
+        title = "Multicellular network",
+        icon = icon("project-diagram"),
+        sidebarPanel(
+          radioButtons(
+            inputId = "network_type",
+            label = "Select network type:",
+            choices = c("Heart failure" = "HF", "Non-failing" = "NF"),
+            selected = "HF",
+            inline = TRUE
+          )
+          #includeMarkdown("inst/query_genes_sidebar.md"),
+          
+        ),
+        mainPanel(
+          
+          h2("1. Multicellular network"),
+          visNetworkOutput("network"),
+          br(),
+          h2("2. Edge exploration"),
+          verbatimTextOutput("selected_edge_info"), 
+          br(), 
+          h3("2.1 Ligand-Receptors"),
+          plotlyOutput("LR_sankey", height = "600px"),
+          br(),
+          h3("2.2 Ligand prioritization"),
+          plotlyOutput("LR"),
+          br(),
+          h3("2.3 Ligand - target genes"),
+          plotlyOutput("NN", height= "800px"),
+          verbatimTextOutput("selected_gene")
+        )
+        ),
+      
 
       
       #### Footer ####

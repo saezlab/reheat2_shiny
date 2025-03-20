@@ -225,7 +225,290 @@ output$text_display <- renderUI({
   # Combine all text outputs into one HTML content
   HTML(paste(text_outputs, collapse = ""))
 })
- 
+
+#### Multicell network ####
+
+# #for test runs 
+# input= list()
+# input$selected_edge= 3
+# input$network_type = "NF"
+# edge_info = list()
+#  edge_info$from ="Fib"
+#  edge_info$to = "Fib"
+# Reactive storage for edges
+edges_reactive <- reactive({
+  df_filtered <- df.depend %>% 
+    filter((!!rlang::sym(input$network_type)) > 0.2) %>% 
+    select(predictor, target, 
+           weight = !!rlang::sym(input$network_type),
+           lr = !!rlang::sym(paste0("lr_", input$network_type)))
+  
+  g1 <- graph_from_data_frame(df_filtered, directed = TRUE)
+  nodes <- data.frame(id = V(g1)$name, label = V(g1)$name)
+  
+  num_nodes <- nrow(nodes)
+  if (num_nodes <= 12) {
+    node_colors <- brewer.pal(num_nodes, "Set3")
+  } else {
+    node_colors <- colorRampPalette(brewer.pal(12, "Set3"))(num_nodes)
+  }
+  nodes$color <- node_colors
+  
+  edges <- as_data_frame(g1, what = "edges") %>%
+    mutate(
+      id = as.character(1:n()),
+      title = paste(from, " -> ", to),
+      value = weight * 2,  # Scale width
+      color = "darkgrey"
+    )
+  
+  list(nodes = nodes, edges = edges)  # Return both nodes & edges
+})
+
+# Render Network
+output$network <- renderVisNetwork({
+  data <- edges_reactive()  # Get reactive nodes & edges
+  visNetwork(data$nodes, data$edges) %>%
+    visEdges(arrows = "to") %>%
+    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+    visEvents(selectEdge = "function(data) {
+                  Shiny.setInputValue('selected_edge', data.edges[0], {priority: 'event'});
+                }") %>%
+    visPhysics(
+      solver = "barnesHut",
+      barnesHut = list(
+        gravitationalConstant = -2000,
+        springLength = 300,
+        damping = 0.3
+      )) %>%
+    visNodes(font = list(size = 20, face = "bold"))
+})
+
+# Display Edge Information
+output$selected_edge_info <- renderPrint({
+  req(input$selected_edge)  # Ensure selection exists
+  
+  data <- edges_reactive()  # Get latest edges
+  edge_info <- data$edges %>% filter(id == input$selected_edge)
+  
+  if (nrow(edge_info) > 0) {
+    cat("Selected Edge:\n")
+    cat("Selected Network:", input$network_type, "\n")
+    cat("From:", edge_info$from, "\n")
+    cat("To:", edge_info$to, "\n")
+    cat("Edge strength:", round(edge_info$value, 2), "\n")
+    cat("Number of LR pairs:", edge_info$lr, "\n")
+  } else {
+    cat("No matching edge found.\n")
+  }
+})
+
+# 
+# output$network <- renderVisNetwork({
+#  
+#   df_filtered <- df.depend %>% 
+#     filter((!!rlang::sym(input$network_type)) > 0.2) %>% 
+#     # Rename the chosen column to "weight" so that the rest of the code can use it generically
+#     select(predictor, target, 
+#            weight = !!rlang::sym(input$network_type),
+#            lr = !!rlang::sym(paste0("lr_", input$network_type)))
+#   
+#   # Create and return the igraph object using the filtered data
+#   g1= graph_from_data_frame(df_filtered, directed = TRUE)
+#   # Example: Convert igraph object to visNetwork format
+#   nodes <- data.frame(id = V(g1)$name, label = V(g1)$name)  # Extract node names
+# 
+#   
+#   # Generate a color palette based on the number of nodes
+#   num_nodes <- nrow(nodes)
+#   # Use Set3 palette (or any palette you prefer)
+#   if(num_nodes <= 12) {
+#     node_colors <- brewer.pal(num_nodes, "Set3")
+#   } else {
+#     node_colors <- colorRampPalette(brewer.pal(12, "Set3"))(num_nodes)
+#   }
+#   
+#   # Assign the colors to the nodes data frame
+#   nodes$color <- node_colors
+#   
+#   edges <- as_data_frame(g1, what = "edges") %>%
+#     mutate(
+#       id = as.character(1:n()),
+#       #label = as.character(round(HF, 2)),      # Edge label based on HF
+#       title = paste(from, " -> ", to),       # Tooltip on hover
+#       value = weight * 2                           # Scale width based on HF (adjust factor as needed)
+#     )
+#   edges$color <- "darkgrey"
+#   
+#   #print(edges)
+#   #get vis
+#   
+#   visNetwork(nodes, edges) %>%
+#     visEdges(arrows = "to") %>%
+#     visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+#     visEvents(selectEdge = "function(data) {
+#                   Shiny.setInputValue('selected_edge', data.edges[0], {priority: 'event'});
+#                 }")%>%
+#     visPhysics(
+#       solver = "barnesHut",
+#       barnesHut = list(
+#         gravitationalConstant = -2000,  # More negative = more repulsion
+#         springLength = 300,             # Increase spring length to push nodes apart
+#         damping = 0.3
+#       ))%>%
+#     visNodes(font = list(size = 20, face = "bold"))
+# })
+# 
+# output$selected_edge_info <- renderPrint({
+#   req(input$selected_edge)  # Ensure an edge is selected
+#   
+#   selected_edge <- input$selected_edge
+#   edge_info <- edges %>% filter(id == selected_edge)  # Match the edge ID
+#   
+#   if (nrow(edge_info) > 0) {
+#     cat("Selected Edge:\n")
+#     cat("Selected Network:", input$network_type, "\n")
+#     cat("From:", edge_info$from, "\n")
+#     cat("To:", edge_info$to, "\n")
+#     cat("Edge strength:", round(edge_info$value*2,2),  "\n")
+#     cat("Number of LR pairs:", edge_info$lr, "\n")
+#   } else {
+#     cat("No matching edge found.\n")
+#   }
+# })
+
+
+output$LR_sankey <- renderPlotly({
+  req(input$selected_edge)
+  
+  edges <- edges_reactive()[[2]]
+  selected_edge <- input$selected_edge
+  edge_info <- edges %>% filter(id == selected_edge)
+  
+  if (length(edge_info) > 0) {
+    
+    df_s <- df.comm %>% 
+      ungroup()%>% 
+      filter(sender == edge_info$from, 
+             receiver == edge_info$to,
+             group == input$network_type) %>% 
+             #abs(interact) > 0.1 ) %>% 
+      arrange(aupr_corrected)
+    
+    # Step 1: Extract unique nodes (ligands & receptors)
+    nodes_s <- data.frame(
+      name = unique(c(df_s$source_genesymbol, df_s$target_genesymbol))
+    )
+    
+    # Create a color vector: if a node appears in the ligand list, color blue; otherwise green.
+    # Note: if a node appears in both, this simple logic will give blue.
+    node_colors <- ifelse(nodes_s$name %in% df_s$source_genesymbol, "darkblue", "darkred")
+    
+    # Step 2: Create links using node indexes
+    links_s <- df_s %>%
+      mutate(
+        source = match(source_genesymbol, nodes_s$name) - 1,  # Convert to zero-based index
+        target = match(target_genesymbol, nodes_s$name) - 1,
+        value= abs(interact)
+      ) %>%
+      select(source, target, value )
+    
+    # Step 3: Build Sankey diagram
+    p <- plot_ly(
+      type = "sankey",
+      node = list(
+        label = nodes_s$name,      # Node labels
+        color = node_colors
+      ),
+      link = list(
+        source = links_s$source,   # Source node indexes
+        target = links_s$target,   # Target node indexes
+        value = links_s$value      # Link values (strength of interaction)
+      )
+    )
+    
+    # Step 4: Show plot
+    print(p)
+    
+  }
+  })
+
+output$LR <- renderPlotly({
+  req(input$selected_edge)  # Ensure an edge is selected
+  
+  selected_edge <- input$selected_edge
+  edges <- edges_reactive()[[2]]
+  edge_info <- edges %>% filter(id == selected_edge)  # Match the edge ID
+  if (length(edge_info) > 0) {
+  #if (nrow(edge_info) > 0) {
+    
+    df <- df.comm %>% 
+      filter(sender == edge_info$from, 
+             receiver == edge_info$to,
+             group == input$network_type) %>% 
+           #  abs(interact) > 0.1 ) %>% 
+      arrange(aupr_corrected)
+    
+    p <- df %>%
+      distinct(aupr_corrected, med.interact, pearson, source_genesymbol, n.cell) %>%
+      ggplot(aes(x = aupr_corrected, y = abs(med.interact), text = source_genesymbol)) +
+      #ggrepel::geom_label_repel(col = "black") +
+      #geom_text(col = "black", nudge_x = 0.2) +
+      geom_point(size = 5.3, color = "black") +
+      geom_point(aes(color = factor(n.cell)), size = 5) +
+      theme_half_open() +
+      scale_color_brewer(type = "seq", palette = 1) +
+      labs(x = "Nichenet regulatory potential",
+           y = "L-R score", 
+           color = "n(cell types)\nexpressing\nligand")
+      #ggtitle(paste0("Ligands from ", edge_info$from, "\ntargeting ", edge_info$to))
+    
+    p<- ggplotly(p, tooltip = c("text")) %>% 
+      event_register("plotly_click")  # Register click events
+    print(p)
+  } else {
+    return(NULL)
+  }
+})
+
+
+output$NN <- renderPlotly({
+  req(input$selected_edge)  # Ensure an edge is selected
+  edges <- edges_reactive()[[2]]
+  selected_edge <- input$selected_edge
+  edge_info <- edges %>% filter(id == selected_edge)  # Match the edge ID
+  
+  if (nrow(edge_info) > 0) {
+    
+    df <- df.nn %>% 
+      filter(sender == edge_info$from, 
+             receiver == edge_info$to,
+             group == input$network_type,
+             abs(value) > 0.1) %>% 
+      arrange(aupr_corrected)
+    p = 
+      df %>% 
+    #filter(target %in% target.genes.oi)%>%
+    ggplot(aes(x= reorder(target,weight), y= reorder(test_ligand,weight),  fill = weight))+
+    geom_tile()+
+    #facet_grid(~sender, scales = "free")+
+    scale_fill_gradient(low = "grey", high= "red")+
+    theme_cowplot()+
+    theme(axis.text.x = element_text(size= 10,  angle=90, hjust= 1, vjust= 0.5),
+          axis.text.y= element_text(size=10),
+          axis.line= element_blank(),
+          panel.border = element_rect(colour = "black", fill=NA, linewidth=1)
+          )+
+    labs(x= paste0(edge_info$to, " target genes"), 
+         y= paste0(edge_info$from, " ligands"), 
+         fill ="Regulatory\npotential")
+  
+    p<- ggplotly(p, tooltip = c("weight")) 
+    print(p)
+  } else {
+    return(NULL)
+  }
+})
 
 }
 
