@@ -13,26 +13,25 @@ Status](https://travis-ci.com/saezlab/reheat.svg?branch=master)](https://travis-
 
 ### About
 
-ReHeaT is a user friendly portal to explore, analyze and download the
-transcriptional consensus signature of human end-stage heart failure
-(HF-CS).
+ReHeaT2 is a user friendly portal to explore, analyze and download the
+multicellular program of human heart failure .
 
-The HF-CS is based on a
-[meta-analysis](http://doi.org/10.1161/JAHA.120.019667) of 16
+The is work is based on a
+[meta-analysis](https://www.biorxiv.org/content/10.1101/2024.11.04.621815v1) of 34
 independent studies. Corresponding code is available
-[here](https://github.com/saezlab/HF_meta-analysis).
+[here](https://github.com/saezlab/reheat2_pub).
 
 ### How to access
 
 There are basically three ways of how to access ReHeaT:
 
 -   You can access a live version running
-    [here](https://saezlab.shinyapps.io/reheat/) on the server from
+    [here](https://saezlab.shinyapps.io/reheat2/) on the server from
     `shinyapps.io`.
 
 -   You can run the app locally in an interactive R session. Before make
     sure you have all packages installed listed in
-    [`sub/global.R`](https://github.com/saezlab/reheat/blob/master/sub/global.R).
+    [`sub/global.R`](https://github.com/saezlab/reheat2/blob/master/sub/global.R).
 
 ``` r
 shiny::runGitHub("reheat", "saezlab")
