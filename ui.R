@@ -135,6 +135,7 @@ ui = function(request) {
         title = "Multicellular network",
         icon = icon("project-diagram"),
         sidebarPanel(
+          includeMarkdown("inst/network_sidebar.md"),
           radioButtons(
             inputId = "network_type",
             label = "Select network type:",
@@ -149,19 +150,38 @@ ui = function(request) {
           
           h2("1. Multicellular network"),
           visNetworkOutput("network"),
+          p("Multicellular information network captured by multicellular program 1, 
+          where each arrow describes how important the expression of a given cell-type is to predict the expression profile of another one. 
+          Predictive importances come from linear mixed models of cell-type signatures of MCP1. 
+          Importances below 0.2 are not included. Please see our mansuscript for details."),
+          p("Cardiomyocytes (CM), fibroblasts (Fib), pericytes (PC), and endothelial (Endo), vascular smooth muscle (vSMCs) cells. Heart failure (HF), and non-failing (NF) hearts."),
+          
           br(),
           h2("2. Edge exploration"),
           verbatimTextOutput("selected_edge_info"), 
+          p("The selected edge can be explored for possible ligand receptor interactions. These were derived independently from the predictive importances. "),
           br(), 
           h3("2.1 Ligand-Receptors"),
           plotlyOutput("LR_sankey", height = "600px"),
+          p("Sankey plot shows a network of ligand (left) - receptor (right) pairs, of a selected edge from the multicellular network. 
+   The Ligand receptor pairs were derived by identifying known ligand-receptor pairs from a meta-database (", 
+                                                        a("LIANA+", href = "https://www.nature.com/articles/s41556-024-01469-w", target = "_blank"), 
+                                                        "), and filtered for high gene loadings in the multicellular program 1."),
+          
           br(),
           h3("2.2 Ligand prioritization"),
           plotlyOutput("LR"),
+          p("Scatterplot compares ligands for their possible importance based on two criteria. NicheNet derived a regulatory potential (corrected AUPR, x-axis) of a given ligand to deregulate a gene signature which here represents extreme gene loadings of the target cell type taken from the MCP1. 
+            L-R score (y-axis) represent the mean gene loadings of the ligand and the receptor of a given cell type pair. If a ligand connected with multiple receptors, the median L-R score was calculated. Color represent the number of cell types that express this ligand."),
           br(),
           h3("2.3 Ligand - target genes"),
           plotlyOutput("NN", height= "800px"),
-          verbatimTextOutput("selected_gene")
+          p("Regulatory potential score, as estimated by ", 
+            a("NicheNet", href = "https://www.nature.com/articles/s41596-024-01121-9", target = "_blank"), 
+            ", represents the potential of ligands in contributing to the regulation of the target cell-type genes."),
+          br(),
+          br(),
+          br()
         )
         ),
       

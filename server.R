@@ -243,26 +243,36 @@ edges_reactive <- reactive({
            weight = !!rlang::sym(input$network_type),
            lr = !!rlang::sym(paste0("lr_", input$network_type)))
   
-  g1 <- graph_from_data_frame(df_filtered, directed = TRUE)
-  nodes <- data.frame(id = V(g1)$name, label = V(g1)$name)
+  # Create nodes dataframe
+  nodes <- data.frame(
+    id = unique(c(df_filtered$predictor, df_filtered$target)),
+    label = unique(c(df_filtered$predictor, df_filtered$target))
+  )
   
+  # Assign colors to nodes
   num_nodes <- nrow(nodes)
   if (num_nodes <= 12) {
     node_colors <- brewer.pal(num_nodes, "Set3")
   } else {
     node_colors <- colorRampPalette(brewer.pal(12, "Set3"))(num_nodes)
   }
+  nodes <- nodes%>% arrange(id)
   nodes$color <- node_colors
   
-  edges <- as_data_frame(g1, what = "edges") %>%
+  # Create edges dataframe
+  edges <- df_filtered %>%
     mutate(
       id = as.character(1:n()),
+      from = predictor,
+      to = target,
       title = paste(from, " -> ", to),
-      value = weight * 2,  # Scale width
-      color = "darkgrey"
-    )
+      value = weight * 2  # Scale width
+      
+    ) %>%
+    select(id, from, to, title, value,weight, lr)
   
-  list(nodes = nodes, edges = edges)  # Return both nodes & edges
+  list(nodes = nodes, edges = edges)
+  
 })
 
 # Render Network
@@ -271,9 +281,12 @@ output$network <- renderVisNetwork({
   visNetwork(data$nodes, data$edges) %>%
     visEdges(arrows = "to") %>%
     visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
-    visEvents(selectEdge = "function(data) {
-                  Shiny.setInputValue('selected_edge', data.edges[0], {priority: 'event'});
-                }") %>%
+     visEvents(selectEdge = "function(data) {
+                   Shiny.setInputValue('selected_edge', data.edges[0], {priority: 'event'});
+                 }") %>%
+    visEdges(shadow = FALSE,
+             arrows =list(to = list(enabled = TRUE, scaleFactor = 1)),
+             color = list(color = "darkgrey", hover= "red", highlight = "darkred"))%>%
     visPhysics(
       solver = "barnesHut",
       barnesHut = list(
@@ -292,7 +305,7 @@ output$selected_edge_info <- renderPrint({
   edge_info <- data$edges %>% filter(id == input$selected_edge)
   
   if (nrow(edge_info) > 0) {
-    cat("Selected Edge:\n")
+    cat("Selected Edge Information \n")
     cat("Selected Network:", input$network_type, "\n")
     cat("From:", edge_info$from, "\n")
     cat("To:", edge_info$to, "\n")
@@ -302,81 +315,6 @@ output$selected_edge_info <- renderPrint({
     cat("No matching edge found.\n")
   }
 })
-
-# 
-# output$network <- renderVisNetwork({
-#  
-#   df_filtered <- df.depend %>% 
-#     filter((!!rlang::sym(input$network_type)) > 0.2) %>% 
-#     # Rename the chosen column to "weight" so that the rest of the code can use it generically
-#     select(predictor, target, 
-#            weight = !!rlang::sym(input$network_type),
-#            lr = !!rlang::sym(paste0("lr_", input$network_type)))
-#   
-#   # Create and return the igraph object using the filtered data
-#   g1= graph_from_data_frame(df_filtered, directed = TRUE)
-#   # Example: Convert igraph object to visNetwork format
-#   nodes <- data.frame(id = V(g1)$name, label = V(g1)$name)  # Extract node names
-# 
-#   
-#   # Generate a color palette based on the number of nodes
-#   num_nodes <- nrow(nodes)
-#   # Use Set3 palette (or any palette you prefer)
-#   if(num_nodes <= 12) {
-#     node_colors <- brewer.pal(num_nodes, "Set3")
-#   } else {
-#     node_colors <- colorRampPalette(brewer.pal(12, "Set3"))(num_nodes)
-#   }
-#   
-#   # Assign the colors to the nodes data frame
-#   nodes$color <- node_colors
-#   
-#   edges <- as_data_frame(g1, what = "edges") %>%
-#     mutate(
-#       id = as.character(1:n()),
-#       #label = as.character(round(HF, 2)),      # Edge label based on HF
-#       title = paste(from, " -> ", to),       # Tooltip on hover
-#       value = weight * 2                           # Scale width based on HF (adjust factor as needed)
-#     )
-#   edges$color <- "darkgrey"
-#   
-#   #print(edges)
-#   #get vis
-#   
-#   visNetwork(nodes, edges) %>%
-#     visEdges(arrows = "to") %>%
-#     visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
-#     visEvents(selectEdge = "function(data) {
-#                   Shiny.setInputValue('selected_edge', data.edges[0], {priority: 'event'});
-#                 }")%>%
-#     visPhysics(
-#       solver = "barnesHut",
-#       barnesHut = list(
-#         gravitationalConstant = -2000,  # More negative = more repulsion
-#         springLength = 300,             # Increase spring length to push nodes apart
-#         damping = 0.3
-#       ))%>%
-#     visNodes(font = list(size = 20, face = "bold"))
-# })
-# 
-# output$selected_edge_info <- renderPrint({
-#   req(input$selected_edge)  # Ensure an edge is selected
-#   
-#   selected_edge <- input$selected_edge
-#   edge_info <- edges %>% filter(id == selected_edge)  # Match the edge ID
-#   
-#   if (nrow(edge_info) > 0) {
-#     cat("Selected Edge:\n")
-#     cat("Selected Network:", input$network_type, "\n")
-#     cat("From:", edge_info$from, "\n")
-#     cat("To:", edge_info$to, "\n")
-#     cat("Edge strength:", round(edge_info$value*2,2),  "\n")
-#     cat("Number of LR pairs:", edge_info$lr, "\n")
-#   } else {
-#     cat("No matching edge found.\n")
-#   }
-# })
-
 
 output$LR_sankey <- renderPlotly({
   req(input$selected_edge)
@@ -485,7 +423,8 @@ output$NN <- renderPlotly({
              receiver == edge_info$to,
              group == input$network_type,
              abs(value) > 0.1) %>% 
-      arrange(aupr_corrected)
+      arrange(weight)%>%
+      slice_max(order_by = weight, n = 100)
     p = 
       df %>% 
     #filter(target %in% target.genes.oi)%>%
@@ -494,7 +433,7 @@ output$NN <- renderPlotly({
     #facet_grid(~sender, scales = "free")+
     scale_fill_gradient(low = "grey", high= "red")+
     theme_cowplot()+
-    theme(axis.text.x = element_text(size= 10,  angle=90, hjust= 1, vjust= 0.5),
+    theme(axis.text.x = element_text(size= 8,  angle=90, hjust= 1, vjust= 0.5),
           axis.text.y= element_text(size=10),
           axis.line= element_blank(),
           panel.border = element_rect(colour = "black", fill=NA, linewidth=1)

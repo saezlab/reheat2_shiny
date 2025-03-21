@@ -21,7 +21,7 @@ This program integrates data from four single-nucleus studies with 21 bulk trans
 #### Citation
 
 ReHeaT vol 2
-> Lanzer JD, Ramirez Flores RO, Linares Blanco J, Saez-Rodriguez J. "Consensus multicellular transcriptional landscape of human end-stage heart failure". _BioRxiv_ 2024, DOI: [10.1101/2024.11.04.621815 ](https://www.biorxiv.org/content/10.1101/2024.11.04.621815v1)
+> Lanzer JD, Ramirez Flores RO, Linares Blanco J, Saez-Rodriguez J. "A cross-study transcriptional patient map of heart failure defines conserved multicellular coordination in cardiac remodeling". _BioRxiv_ 2024, DOI: [10.1101/2024.11.04.621815 ](https://www.biorxiv.org/content/10.1101/2024.11.04.621815v1)
 
 ReHeaT vol 1
 > Ramirez Flores RO, Lanzer JD, Holland CH, Leuschner F, Most P, Schultz J-H, Levinson RT, 

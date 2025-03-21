@@ -14,9 +14,8 @@ library(ggplot2)
 library(plotly)
 library(ggrepel)
 library(cowplot)
-library(igraph)
 library(visNetwork)
-library(dplyr)
+library(cowplot)
 library(RColorBrewer)
 
 
