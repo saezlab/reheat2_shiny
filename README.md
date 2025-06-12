@@ -1,20 +1,14 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Welcome to ReHeaT
-
-<!-- badges: start -->
-
-[![Build
-Status](https://travis-ci.com/saezlab/reheat.svg?branch=master)](https://travis-ci.com/saezlab/reheat)
-<!-- badges: end -->
+# Welcome to ReHeaT2
 
 > the **Re**ference for the **Hea**rt failure **T**ranscriptome
 
 ### About
 
 ReHeaT2 is a user friendly portal to explore, analyze and download the
-multicellular program of human heart failure .
+multicellular program of human heart failure.
 
 The is work is based on a
 [meta-analysis](https://www.biorxiv.org/content/10.1101/2024.11.04.621815v1) of 34
